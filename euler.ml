@@ -34,19 +34,19 @@ let num_rev n =
     if n <= 0 then acc else aux (n / 10) (acc * 10 + n mod 10)
   in aux n 0
 
-let p1 =
+let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
   List.(list_of_range 1 999 |> filter mul_3_5 |> fold_left (+) 0)
 
-let p2 =
+let p2 () =
   fibs_upto 4_000_000 |>
   List.filter (fun x -> x mod 2 = 0) |>
   List.fold_left (+) 0
 
-let p3 =
+let p3 () =
   prime_factors 600851475143 |> List.hd
 
-let p4 =
+let p4 () =
   let is_div_3d n = foldl_range 100 999 (fun p i -> p || (n mod i == 0 && n / i < 1000)) false in
   let prefix = 999 * 999 / 1000 in
   let rec pal_div_3d prefix =
@@ -54,19 +54,19 @@ let p4 =
     if is_div_3d pal then pal else pal_div_3d (prefix - 1)
   in pal_div_3d prefix
 
-let p5 =
+let p5 () =
   let common_div = list_of_range 1 20 |> List.filter is_prime |> List.fold_left ( * ) 1 in
   let is_div_1_20 n = foldl_range 1 20 (fun p i -> p && (n mod i == 0)) true in
   let rec aux i = if is_div_1_20 i then i else aux (i + common_div) in
   aux common_div
 
-let p6 =
+let p6 () =
   let pow2 x = x * x in
   let square_of_sum = foldl_range 1 100 (+) 0 |> pow2 in
   let sum_of_squares = foldl_range 1 100 (fun s i -> s + pow2 i) 0 in
   square_of_sum - sum_of_squares
 
-let p7 =
+let p7 () =
   let rec next_prime = function
     | p when p < 2 -> 2
     | 2 -> 3
@@ -77,7 +77,7 @@ let p7 =
     in aux 2 n
   in nth_prime 10_001
 
-let p8_data =
+let p8_data () =
   let list_of_string s =
     let rec aux acc i = if i < 0 then acc else aux (s.[i] :: acc) (i - 1)
     in aux [] (String.length s - 1)
@@ -108,7 +108,7 @@ let p8_data =
   List.concat |>
   List.map (fun c -> int_of_char c - 48)
 
-let p8 =
+let p8 () =
   let take n xs =
     let rec aux acc i = function
       | [] -> []
@@ -122,9 +122,9 @@ let p8 =
         let product = take len l |> List.fold_left ( * ) 1 in
         if product > max then aux product xs else aux max xs
     in aux 0 xs
-  in max_sublist 13 p8_data
+  in p8_data () |> max_sublist 13
 
-let p9 =
+let p9 () =
   let pow2 x = x * x in
   let is_solution a b = (let c = 1000 - a - b in pow2 a + pow2 b = pow2 c && c > a && c > b) in
   let nums =
@@ -136,7 +136,7 @@ let p9 =
   in
   List.hd nums |> fun (a,b) -> a * b * (1000 - a - b)
 
-let p10 =
+let p10 () =
   let primes = 
     foldl_range 2 2_000_000 (fun xs i ->
         if is_prime i then i::xs else xs
@@ -144,18 +144,20 @@ let p10 =
   in
   List.fold_left (+) 0 primes
 
+let all () =
+  let open Printf in
+  p1  () |> printf "01 %d\n";
+  p2  () |> printf "02 %d\n";
+  p3  () |> printf "03 %d\n";
+  p4  () |> printf "04 %d\n";
+  p5  () |> printf "05 %d\n";
+  p6  () |> printf "06 %d\n";
+  p7  () |> printf "07 %d\n";
+  p8  () |> printf "08 %d\n";
+  p9  () |> printf "09 %d\n";
+  p10 () |> printf "10 %d\n";;
 
 let () =
   let open Printf in
-  printf "01 %d\n" p1;
-  printf "02 %d\n" p2;
-  printf "03 %d\n" p3;
-  printf "04 %d\n" p4;
-  printf "05 %d\n" p5;
-  printf "06 %d\n" p6;
-  printf "07 %d\n" p7;
-  printf "08 %d\n" p8;
-  printf "09 %d\n" p9;
-  printf "10 %d\n" p10;
-
+  p10 () |> printf "10 %d\n";
 
