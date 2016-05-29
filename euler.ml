@@ -34,6 +34,43 @@ let num_rev n =
     if n <= 0 then acc else aux (n / 10) (acc * 10 + n mod 10)
   in aux n 0
 
+let take n xs =
+  let rec aux acc i = function
+    | [] -> []
+    | x::xs -> if i <= 0 then acc else aux (x::acc) (i - 1) xs
+  in aux [] n xs
+
+let rec zip xs ys = match (xs, ys) with
+  | ([], []) -> []
+  | (x::xs, []) -> []
+  | ([], y::ys) -> []
+  | (x::xs, y::ys) -> (x,y)::zip xs ys
+
+let max_sublist_prod len xs =
+  let rec aux max = function
+    | [] -> max
+    | x::xs as l ->
+      let product = take len l |> List.fold_left ( * ) 1 in
+      if product > max then aux product xs else aux max xs
+  in aux 0 xs
+
+let swap (x,y) = (y,x)
+
+let rec digits n =
+  if n < 10 then [n] else n mod 10 :: digits (n / 10)
+
+let list_mul s xs =
+  let rec aux carry = function 
+    | [] -> if carry = 0 then [] else digits carry
+    | x::xs ->
+      let n = s * x + carry in
+      let digit = n mod 10 in
+      let carry = n / 10 in
+      digit :: aux carry xs
+  in aux 0 xs
+
+let sum xs = List.fold_left (+) 0 xs
+
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
   List.(list_of_range 1 999 |> filter mul_3_5 |> fold_left (+) 0)
@@ -41,7 +78,7 @@ let p1 () =
 let p2 () =
   fibs_upto 4_000_000 |>
   List.filter (fun x -> x mod 2 = 0) |>
-  List.fold_left (+) 0
+  sum
 
 let p3 () =
   prime_factors 600851475143 |> List.hd
@@ -109,20 +146,7 @@ let p8_data () =
   List.map (fun c -> int_of_char c - 48)
 
 let p8 () =
-  let take n xs =
-    let rec aux acc i = function
-      | [] -> []
-      | x::xs -> if i <= 0 then acc else aux (x::acc) (i - 1) xs
-    in aux [] n xs
-  in
-  let max_sublist len xs =
-    let rec aux max = function
-      | [] -> max
-      | x::xs as l ->
-        let product = take len l |> List.fold_left ( * ) 1 in
-        if product > max then aux product xs else aux max xs
-    in aux 0 xs
-  in p8_data () |> max_sublist 13
+  p8_data () |> max_sublist_prod 13
 
 let p9 () =
   let pow2 x = x * x in
@@ -137,12 +161,58 @@ let p9 () =
   List.hd nums |> fun (a,b) -> a * b * (1000 - a - b)
 
 let p10 () =
+  (* brute force is fast enough, but a proper sieving algorithm would be nicer *)
   let primes = 
     foldl_range 2 2_000_000 (fun xs i ->
         if is_prime i then i::xs else xs
       ) []
   in
-  List.fold_left (+) 0 primes
+  sum primes
+
+let p14 () =
+  let count_collatz n =
+    let rec aux count n =
+      if n <= 1 then count else
+      if n mod 2 = 0
+      then aux (count + 1) (n / 2)
+      else aux (count + 1) (3 * n + 1)
+    in aux 0 n
+  in
+  foldl_range 1 1_000_000 (fun (cnt,start) i ->
+      let next_cnt = count_collatz i in
+      if next_cnt > cnt
+      then (next_cnt, i)
+      else (cnt, start)
+    ) (0,1)
+  |> snd
+
+let p15 () =
+  let memo = Hashtbl.create (20*20) in
+  let rec path_count size =
+    try Hashtbl.find memo size
+    with Not_found -> begin match size with
+        | (0,0) -> 1
+        | (0,h) -> 1
+        | (w,0) -> 1
+        | (w,h) ->
+          let count = path_count ((w - 1), h) + path_count (w, (h - 1)) in
+          Hashtbl.add memo size count;
+          count
+      end
+  in
+  path_count (20,20)
+    
+let p16 () =
+  let rec pow2_digits n acc =
+    if n <= 0 then acc else pow2_digits (n - 1) (list_mul 2 acc)
+  in
+  pow2_digits 1000 [1] |> sum
+
+let p20 () =
+  let rec fact_digits n acc =
+    if n <= 0 then acc else fact_digits (n - 1) (list_mul n acc)
+  in
+  fact_digits 100 [1] |> sum
 
 let all () =
   let open Printf in
@@ -155,9 +225,12 @@ let all () =
   p7  () |> printf "07 %d\n";
   p8  () |> printf "08 %d\n";
   p9  () |> printf "09 %d\n";
-  p10 () |> printf "10 %d\n";;
+  p10 () |> printf "10 %d\n";
+  p14 () |> printf "14 %d\n";
+  p15 () |> printf "15 %d\n";
+  p16 () |> printf "16 %d\n";;
 
 let () =
   let open Printf in
-  p10 () |> printf "10 %d\n";
+  p20 () |> printf "20 %d\n";;
 
