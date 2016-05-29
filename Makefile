@@ -3,7 +3,7 @@ run: euler
 	./$<
 
 euler: *.ml
-	ocamlc -o $@ $^
+	ocamlc -safe-string -o $@ $^
 
 .PHONY: clean
 clean:
