@@ -59,7 +59,7 @@ let swap (x,y) = (y,x)
 let rec digits n =
   if n < 10 then [n] else n mod 10 :: digits (n / 10)
 
-let list_mul s xs =
+let mul_digits s xs =
   let rec aux carry = function 
     | [] -> if carry = 0 then [] else digits carry
     | x::xs ->
@@ -70,6 +70,30 @@ let list_mul s xs =
   in aux 0 xs
 
 let sum xs = List.fold_left (+) 0 xs
+
+let divisor_sum n =
+  foldl_range 1 (n/2) (fun sum i ->
+      if n mod i = 0 then sum + i else sum
+    ) 0
+
+let rec scalar_add_digits s = function
+  | [] -> if s = 0 then [] else digits s
+  | x::xs ->
+    let n = x + s in
+    let digit = n mod 10 in
+    let carry = n / 10 in
+    digit :: scalar_add_digits carry xs
+
+let add_digits a b =
+  let rec aux carry = function
+    | ([], y) -> scalar_add_digits carry y
+    | (x, []) -> scalar_add_digits carry x
+    | (x::xs, y::ys) ->
+      let n = x + y + carry in
+      let digit = n mod 10 in
+      let carry = n / 10 in
+      digit :: aux carry (xs,ys)
+  in aux 0 (a,b)
 
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
@@ -204,15 +228,64 @@ let p15 () =
     
 let p16 () =
   let rec pow2_digits n acc =
-    if n <= 0 then acc else pow2_digits (n - 1) (list_mul 2 acc)
+    if n <= 0 then acc else pow2_digits (n - 1) (mul_digits 2 acc)
   in
   pow2_digits 1000 [1] |> sum
 
 let p20 () =
   let rec fact_digits n acc =
-    if n <= 0 then acc else fact_digits (n - 1) (list_mul n acc)
+    if n <= 0 then acc else fact_digits (n - 1) (mul_digits n acc)
   in
   fact_digits 100 [1] |> sum
+
+let p21 () =
+  foldl_range 0 9999 (fun sum a ->
+      let b = divisor_sum a in
+      if a > b && divisor_sum b = a
+      then sum + a + b
+      else sum
+    ) 0
+
+let p23 () =
+  let bound = 28123 in
+  let is_abundant n = divisor_sum n > n in
+  let abundants = list_of_range 0 bound |> List.filter is_abundant |> Array.of_list in
+  let abundant_sums = Hashtbl.create (10 * Array.length abundants) in
+  for i = 0 to (Array.length abundants - 1) do
+    for j = i to (Array.length abundants - 1) do
+      let sum = abundants.(i) + abundants.(j) in
+      if sum <= bound then
+        Hashtbl.add abundant_sums sum ();
+    done
+  done;
+  foldl_range 0 bound (fun sum i ->
+      try
+        let () = Hashtbl.find abundant_sums i in
+        sum
+      with Not_found -> sum + i
+    ) 0
+
+exception Result of int list
+
+let p24 () =
+  let rec lex_perm_count cnt perm = 
+    if List.length perm < 10 then
+      foldl_range 0 9 (fun cnt i ->
+          if List.mem i perm
+          then cnt
+          else lex_perm_count cnt (i::perm)) cnt
+    else
+    if cnt <= 1 then raise (Result perm) else (cnt - 1)
+  in
+  try lex_perm_count 1_000_000 []
+  with Result perm -> perm |> List.rev |> List.fold_left (fun num i -> num * 10 + i) 0
+
+let p25 () =
+  let fib_digits len =
+    let rec aux n a b =
+      if List.length b >= len then n else aux (n + 1) b (add_digits a b)
+    in aux 2 [1] [1]
+  in fib_digits 1000
 
 let all () =
   let open Printf in
@@ -228,9 +301,13 @@ let all () =
   p10 () |> printf "10 %d\n";
   p14 () |> printf "14 %d\n";
   p15 () |> printf "15 %d\n";
-  p16 () |> printf "16 %d\n";;
+  p16 () |> printf "16 %d\n";
+  p20 () |> printf "20 %d\n";
+  p21 () |> printf "21 %d\n";
+  p23 () |> printf "23 %d\n";
+  p24 () |> printf "24 %d\n";;
 
-let () =
+let x =
   let open Printf in
-  p20 () |> printf "20 %d\n";;
+  p25 () |> printf "25 %d\n";;
 
