@@ -59,7 +59,7 @@ let swap (x,y) = (y,x)
 let rec digits n =
   if n < 10 then [n] else n mod 10 :: digits (n / 10)
 
-let mul_digits s xs =
+let scalar_mul_digits s xs =
   let rec aux carry = function 
     | [] -> if carry = 0 then [] else digits carry
     | x::xs ->
@@ -228,13 +228,13 @@ let p15 () =
     
 let p16 () =
   let rec pow2_digits n acc =
-    if n <= 0 then acc else pow2_digits (n - 1) (mul_digits 2 acc)
+    if n <= 0 then acc else pow2_digits (n - 1) (scalar_mul_digits 2 acc)
   in
   pow2_digits 1000 [1] |> sum
 
 let p20 () =
   let rec fact_digits n acc =
-    if n <= 0 then acc else fact_digits (n - 1) (mul_digits n acc)
+    if n <= 0 then acc else fact_digits (n - 1) (scalar_mul_digits n acc)
   in
   fact_digits 100 [1] |> sum
 
@@ -287,6 +287,63 @@ let p25 () =
     in aux 2 [1] [1]
   in fib_digits 1000
 
+let p26 () =
+  let rec reci_cycle len rem rems n =
+    let rem = rem mod n in
+    if List.mem rem rems then len else reci_cycle (len + 1) (rem * 10) (rem::rems) n
+  in
+  foldl_range 1 999 (fun (max, d) i ->
+      let cycle = reci_cycle 1 10 [] i in
+      if cycle > max then (cycle, i) else (max, d)
+    ) (0, 0)
+  |> snd
+
+let p27 () =
+  let rec prime_seq a b n =
+    if is_prime (n * n + a * n + b) then prime_seq a b (n + 1) else n
+  in
+  foldl_range (-999) 999 (fun res i ->
+      foldl_range (-999) 999 (fun (max, a, b) j ->
+          let seq = prime_seq i j 0 in
+          if seq > max then (seq, i, j) else (max, a, b)
+        ) res
+    ) (0, 0, 0)
+  |> (fun (_, a, b) -> a * b)
+
+let p28 () =
+  let rec diag_sum n =
+    if n <= 1 then 1 else
+      let area = n * n in
+      let sum = foldl_range 0 3 (fun sum i -> sum + area - i * (n - 1)) 0 in
+      sum + diag_sum (n - 2)
+  in diag_sum 1001
+
+let p29 () =
+  let run_length = function 
+    | x::xs -> 
+      (* ugh :( *)
+      let rec aux n cur acc = function
+        | [] -> (n, cur)::acc
+        | x::xs ->
+          if x = cur
+          then aux (n + 1) cur acc xs
+          else aux 1 x ((n, cur)::acc) xs
+      in
+      aux 1 x [] xs
+    | [] -> []
+  in
+  let pf_pow factors e = List.map (fun (c,p) -> (c*e, p)) factors in
+  let primes =
+    list_of_range 2 100 |> List.map (fun i -> i |> prime_factors |> run_length)
+  in
+  let counter = Hashtbl.create (100*100) in
+  for e = 2 to 100 do
+    List.iter (fun p ->
+        Hashtbl.replace counter (pf_pow p e) ()
+      ) primes
+  done;
+  Hashtbl.length counter
+
 let all () =
   let open Printf in
   p1  () |> printf "01 %d\n";
@@ -305,9 +362,13 @@ let all () =
   p20 () |> printf "20 %d\n";
   p21 () |> printf "21 %d\n";
   p23 () |> printf "23 %d\n";
-  p24 () |> printf "24 %d\n";;
+  p24 () |> printf "24 %d\n";
+  p25 () |> printf "25 %d\n";
+  p26 () |> printf "26 %d\n";
+  p27 () |> printf "27 %d\n";
+  p28 () |> printf "28 %d\n";;
 
 let x =
   let open Printf in
-  p25 () |> printf "25 %d\n";;
+  p29 () |> printf "29 %d\n";;
 
