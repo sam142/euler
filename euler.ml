@@ -40,6 +40,12 @@ let take n xs =
     | x::xs -> if i <= 0 then acc else aux (x::acc) (i - 1) xs
   in aux [] n xs
 
+let split n xs =
+  let rec aux acc i = function
+    | [] -> (acc,[])
+    | x::xs as l -> if i <= 0 then (acc,l) else aux (x::acc) (i - 1) xs
+  in aux [] n xs
+
 let rec zip xs ys = match (xs, ys) with
   | ([], []) -> []
   | (x::xs, []) -> []
@@ -94,6 +100,17 @@ let add_digits a b =
       let carry = n / 10 in
       digit :: aux carry (xs,ys)
   in aux 0 (a,b)
+
+let pow a b =
+  let rec pow acc a b =
+    if b < 1 then acc else pow (a * acc) a (b - 1)
+  in pow 1 a b
+
+let remdups xs =
+  let rec aux acc = function
+    | [] -> acc
+    | x::xs -> xs |> List.filter ((<>) x) |> aux (x::acc)
+  in aux [] xs |> List.rev
 
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
@@ -344,6 +361,67 @@ let p29 () =
   done;
   Hashtbl.length counter
 
+let p30 () =
+  let pow5_sum ds = ds |> List.map (fun d -> pow d 5) |> sum in
+  let rec is_solution ds =
+    let pow5_digits = ds |> pow5_sum |> digits in
+    let sort = List.sort compare in
+    (sort ds) = (sort pow5_digits)
+  in
+  let next_submultiset ds =
+    let rec aux i carry = function
+      | [] -> foldl_range 0 i (fun tail _ -> 0::tail) []
+      | d::ds ->
+        let digit = (d + carry) mod 10 and carry = (d + carry) / 10 in
+        if carry < 1
+        then foldl_range 0 i (fun tail _ -> digit::tail) ds
+        else aux (i + 1) carry ds
+    in aux 0 1 ds
+  in 
+  let find_solutions max_length =
+    let rec aux acc ds = 
+      let acc = (if is_solution ds then ds::acc else acc) in
+      let next = next_submultiset ds in
+      if List.length next > max_length then acc else aux acc next
+    in aux [] [2]
+  in find_solutions 6 |> List.map pow5_sum |> sum
+
+let p31 () =
+  let find_solutions target coins =
+    let rec aux min acc value =
+      if value > target then acc else
+      if value = target then (acc + 1) else
+        coins |> 
+        List.filter ((<=) min) |> 
+        List.fold_left (fun acc coin -> aux coin acc (value + coin)) acc
+    in aux 0 0 0
+  in find_solutions 200 [1;2;5;10;20;50;100;200]
+
+let p32 () =
+  let int_of_digits ds = List.fold_left (fun num i -> num * 10 + i) 0 ds in
+  let collect_pandigital ds acc =
+    foldl_range 1 4 (fun acc i ->
+        foldl_range 1 4 (fun acc j ->
+            let (a,ds) = split i ds in
+            let (b,ds) = split j ds in
+            let a = int_of_digits a
+            and b = int_of_digits b
+            and ds = int_of_digits ds
+            in if a * b = ds then ds::acc else acc
+          ) acc
+      ) acc
+  in
+  let rec collect_solutions acc perm =
+    if List.length perm < 9 then
+      foldl_range 1 9 (fun acc i ->
+          if List.mem i perm
+          then acc
+          else collect_solutions acc (i::perm)
+        ) acc
+    else
+      collect_pandigital perm acc
+  in collect_solutions [] [] |> remdups |> sum
+    
 let all () =
   let open Printf in
   p1  () |> printf "01 %d\n";
@@ -366,9 +444,12 @@ let all () =
   p25 () |> printf "25 %d\n";
   p26 () |> printf "26 %d\n";
   p27 () |> printf "27 %d\n";
-  p28 () |> printf "28 %d\n";;
+  p28 () |> printf "28 %d\n";
+  p29 () |> printf "29 %d\n";
+  p30 () |> printf "30 %d\n";
+  p31 () |> printf "31 %d\n";;
 
 let x =
   let open Printf in
-  p29 () |> printf "29 %d\n";;
+  p32 () |> printf "32 %d\n";;
 
