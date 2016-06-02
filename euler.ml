@@ -65,6 +65,9 @@ let swap (x,y) = (y,x)
 let rec digits n =
   if n < 10 then [n] else n mod 10 :: digits (n / 10)
 
+let int_of_digits ds =
+  List.fold_left (fun num i -> num * 10 + i) 0 ds
+
 let scalar_mul_digits s xs =
   let rec aux carry = function 
     | [] -> if carry = 0 then [] else digits carry
@@ -111,6 +114,16 @@ let remdups xs =
     | [] -> acc
     | x::xs -> xs |> List.filter ((<>) x) |> aux (x::acc)
   in aux [] xs |> List.rev
+
+let next_multiset ds =
+  let rec aux i carry = function
+    | [] -> foldl_range 0 i (fun tail _ -> 0::tail) []
+    | d::ds ->
+      let digit = (d + carry) mod 10 and carry = (d + carry) / 10 in
+      if carry < 1
+      then foldl_range 0 i (fun tail _ -> digit::tail) ds
+      else aux (i + 1) carry ds
+  in aux 0 1 ds
 
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
@@ -295,7 +308,7 @@ let p24 () =
     if cnt <= 1 then raise (Result perm) else (cnt - 1)
   in
   try lex_perm_count 1_000_000 []
-  with Result perm -> perm |> List.rev |> List.fold_left (fun num i -> num * 10 + i) 0
+  with Result perm -> perm |> List.rev |> int_of_digits 
 
 let p25 () =
   let fib_digits len =
@@ -368,20 +381,10 @@ let p30 () =
     let sort = List.sort compare in
     (sort ds) = (sort pow5_digits)
   in
-  let next_submultiset ds =
-    let rec aux i carry = function
-      | [] -> foldl_range 0 i (fun tail _ -> 0::tail) []
-      | d::ds ->
-        let digit = (d + carry) mod 10 and carry = (d + carry) / 10 in
-        if carry < 1
-        then foldl_range 0 i (fun tail _ -> digit::tail) ds
-        else aux (i + 1) carry ds
-    in aux 0 1 ds
-  in 
   let find_solutions max_length =
     let rec aux acc ds = 
       let acc = (if is_solution ds then ds::acc else acc) in
-      let next = next_submultiset ds in
+      let next = next_multiset ds in
       if List.length next > max_length then acc else aux acc next
     in aux [] [2]
   in find_solutions 6 |> List.map pow5_sum |> sum
@@ -398,7 +401,6 @@ let p31 () =
   in find_solutions 200 [1;2;5;10;20;50;100;200]
 
 let p32 () =
-  let int_of_digits ds = List.fold_left (fun num i -> num * 10 + i) 0 ds in
   let collect_pandigital ds acc =
     foldl_range 1 4 (fun acc i ->
         foldl_range 1 4 (fun acc j ->
@@ -421,7 +423,59 @@ let p32 () =
     else
       collect_pandigital perm acc
   in collect_solutions [] [] |> remdups |> sum
-    
+
+let p33 () =
+  let rec gcd a b =
+    let a = max a b and b = min a b in
+    if a mod b = 0 then b else gcd (a - b) b
+  in
+  let id x = x in
+  let mem_of f xs ys = List.filter (fun y -> f (List.mem y xs)) ys in
+  let not_zero = List.filter ((<>) 0) in
+  foldl_range 10 99 (fun acc i ->
+      foldl_range (i+1) 99 (fun acc j ->
+          let dis = digits i |> not_zero and djs = digits j |> not_zero in
+          let common = dis |> mem_of id djs  in
+          if common = [] then acc else
+            let dis = dis |> mem_of not common in
+            let djs = djs |> mem_of not common in
+            let ls = List.map (( * ) i) djs in
+            let rs = List.map (( * ) j) dis in
+            if List.exists (fun l -> List.mem l rs) ls
+            then (i,j)::acc
+            else acc
+        ) acc
+    ) [] |>
+  List.fold_left (fun (pn, pd) (n, d) -> (pn*n, pd*d)) (1,1) |>
+  fun (n, d) -> d / gcd n d
+
+let p34 () =
+  let rec fact i = if i <= 1 then 1 else i * fact (i - 1) in
+  let fact_sum ds = ds |> List.map fact |> sum in
+  let sort = List.sort compare in
+  let is_solution ds = (fact_sum ds |> digits |> sort) = (ds |> sort) in
+  let rec find_solutions acc ds max_length =
+    let next = next_multiset ds in
+    if List.length ds > max_length then acc else
+      let acc = if is_solution ds then ds::acc else acc
+      in find_solutions acc next max_length
+  in find_solutions [] [3] 7 |> List.map fact_sum |> sum
+
+let p35 () =
+  let rotate = function 
+    | [] -> []
+    | x::xs -> xs @ [x]
+  in
+  let is_circular_prime ds =
+    let rec aux acc i ds =
+      if i <= 0 then acc else
+        aux (acc && int_of_digits ds |> is_prime)  (i - 1) (rotate ds)
+    in aux true (List.length ds) ds
+  in
+  foldl_range 1 999_999 (fun cnt i ->
+      if is_circular_prime (digits i) then cnt + 1 else cnt
+    ) 0
+
 let all () =
   let open Printf in
   p1  () |> printf "01 %d\n";
@@ -447,9 +501,12 @@ let all () =
   p28 () |> printf "28 %d\n";
   p29 () |> printf "29 %d\n";
   p30 () |> printf "30 %d\n";
-  p31 () |> printf "31 %d\n";;
+  p31 () |> printf "31 %d\n";
+  p32 () |> printf "32 %d\n";
+  p33 () |> printf "33 %d\n";
+  p34 () |> printf "34 %d\n";;
 
-let x =
+let last =
   let open Printf in
-  p32 () |> printf "32 %d\n";;
+  p35 () |> printf "35 %d\n";;
 
