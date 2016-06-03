@@ -476,6 +476,42 @@ let p35 () =
       if is_circular_prime (digits i) then cnt + 1 else cnt
     ) 0
 
+let p36 () =
+  let rec to_bin_digits i =
+    if i <= 1 then [i] else (i mod 2)::to_bin_digits (i / 2) in
+  foldl_range 1 999_999 (fun sum i ->
+      let ds = digits i in
+      if List.rev ds = ds then
+        let dbs = to_bin_digits i in
+        if List.rev dbs = dbs then sum + i else sum
+      else
+        sum
+    ) 0
+
+let p37 () =
+  let is_front_prime ds = 
+    let rec aux acc = function 
+      | [] -> true
+      | x::xs ->
+        let ds = acc @ [x] in
+        if int_of_digits ds |> is_prime
+        then aux ds xs else false
+    in aux [] ds
+  in
+  let rec trunc_primes acc ds =
+    let acc = if is_front_prime ds then ds::acc else acc in
+    List.fold_left (fun acc p ->
+        let pds = p::ds in
+        let n = int_of_digits pds in
+        if is_prime n then
+          trunc_primes acc (p::ds)
+        else acc
+      ) acc [1;2;3;5;7;9]
+  in trunc_primes [] [] |>
+     List.map int_of_digits |>
+     List.filter ((<=) 10) |>
+     sum
+
 let all () =
   let open Printf in
   p1  () |> printf "01 %d\n";
@@ -504,9 +540,11 @@ let all () =
   p31 () |> printf "31 %d\n";
   p32 () |> printf "32 %d\n";
   p33 () |> printf "33 %d\n";
-  p34 () |> printf "34 %d\n";;
+  p34 () |> printf "34 %d\n";
+  p35 () |> printf "35 %d\n";
+  p36 () |> printf "36 %d\n";;
 
 let last =
   let open Printf in
-  p35 () |> printf "35 %d\n";;
+  p37 () |> printf "37 %d\n";;
 
