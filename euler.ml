@@ -40,11 +40,19 @@ let take n xs =
     | x::xs -> if i <= 0 then acc else aux (x::acc) (i - 1) xs
   in aux [] n xs
 
-let split n xs =
+let rec take_prefix prefix xs =
+  match (prefix, xs) with
+  | ([], xs) -> Some xs
+  | (p::ps, []) -> None
+  | (p::ps, x::xs) -> if p <> x then None else take_prefix ps xs
+
+let split_rev n xs =
   let rec aux acc i = function
     | [] -> (acc,[])
     | x::xs as l -> if i <= 0 then (acc,l) else aux (x::acc) (i - 1) xs
   in aux [] n xs
+
+let split n xs = split_rev n xs |> fun (front, back) -> (List.rev front, back)
 
 let rec zip xs ys = match (xs, ys) with
   | ([], []) -> []
@@ -404,8 +412,8 @@ let p32 () =
   let collect_pandigital ds acc =
     foldl_range 1 4 (fun acc i ->
         foldl_range 1 4 (fun acc j ->
-            let (a,ds) = split i ds in
-            let (b,ds) = split j ds in
+            let (a,ds) = split_rev i ds in
+            let (b,ds) = split_rev j ds in
             let a = int_of_digits a
             and b = int_of_digits b
             and ds = int_of_digits ds
@@ -489,7 +497,7 @@ let p36 () =
     ) 0
 
 let p37 () =
-  let is_front_prime ds = 
+  let are_prefixes_prime ds = 
     let rec aux acc = function 
       | [] -> true
       | x::xs ->
@@ -499,7 +507,7 @@ let p37 () =
     in aux [] ds
   in
   let rec trunc_primes acc ds =
-    let acc = if is_front_prime ds then ds::acc else acc in
+    let acc = if are_prefixes_prime ds then ds::acc else acc in
     List.fold_left (fun acc p ->
         let pds = p::ds in
         let n = int_of_digits pds in
@@ -507,10 +515,56 @@ let p37 () =
           trunc_primes acc (p::ds)
         else acc
       ) acc [1;2;3;5;7;9]
-  in trunc_primes [] [] |>
-     List.map int_of_digits |>
-     List.filter ((<=) 10) |>
-     sum
+  in trunc_primes [] []
+     |> List.map int_of_digits
+     |> List.filter ((<=) 10)
+     |> sum
+
+let p38 () =
+  let digits n = n |> digits |> List.rev in
+  let rec is_cat_product prefix i ds =
+    let n = prefix * i |> digits in
+    match take_prefix n ds with
+    | None -> false
+    | Some suffix ->
+      if suffix = [] then true
+      else is_cat_product prefix (i + 1) suffix
+  in
+  let exists_cat_product ds =
+    let max_length = List.length ds / 2 in
+    let rec aux len =
+      if len > max_length then false else
+      if is_cat_product (split len ds |> fst |> int_of_digits) 1 ds then true
+      else aux (len + 1)
+    in aux 1
+  in
+  let rec find_solution perm =
+    if List.length perm < 9 then
+      foldr_range 1 9 (fun i acc ->
+          if List.mem i perm || acc <> None then acc
+          else find_solution (perm @ [i])
+        ) None
+    else
+    if exists_cat_product perm then Some perm else None
+  in
+  match find_solution [] with None -> 0 | Some xs -> int_of_digits xs
+
+let p39 () =
+  let max_snd (a,b) (x,y) = if b > y then (a,b) else (x,y) in
+  let is_right_triangle a b c = (a*a + b*b - c*c = 0) in
+  let count_right_triangles p =
+    foldl_range 1 (p/3) (fun acc a ->
+        foldl_range (a+1) (2*p/3) (fun acc b -> 
+            let c = p - a - b in
+            if is_right_triangle a b c
+            then acc + 1
+            else acc
+          ) acc
+      ) 0
+  in list_of_range 120 1000
+     |> List.map (fun i -> (i, count_right_triangles i))
+     |> List.fold_left max_snd (0,0)
+     |> fst
 
 let all () =
   let open Printf in
@@ -542,9 +596,11 @@ let all () =
   p33 () |> printf "33 %d\n";
   p34 () |> printf "34 %d\n";
   p35 () |> printf "35 %d\n";
-  p36 () |> printf "36 %d\n";;
+  p36 () |> printf "36 %d\n";
+  p37 () |> printf "37 %d\n";
+  p38 () |> printf "38 %d\n";;
 
 let last =
   let open Printf in
-  p37 () |> printf "37 %d\n";;
+  p39 () |> printf "39 %d\n";;
 
