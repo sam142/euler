@@ -17,6 +17,11 @@ let is_prime p =
     if i > bound then true else p mod i <> 0 && aux (i + 1)
   in p > 1 && aux 2
 
+let rec next_prime = function
+  | p when p < 2 -> 2
+  | 2 -> 3
+  | p -> let next = p + 2 in if is_prime next then next else next_prime next
+
 let prime_divisor n =
   let rec aux i =
     if n mod i = 0 && is_prime i then i else aux (i + 1)
@@ -24,12 +29,12 @@ let prime_divisor n =
 
 let prime_factors n =
   let rec aux acc i =
-    if i < 2 then acc else 
+    if i < 2 then acc else
       let div = prime_divisor i in
       aux (div::acc) (i / div)
   in aux [] n
 
-let num_rev n = 
+let num_rev n =
   let rec aux n acc =
     if n <= 0 then acc else aux (n / 10) (acc * 10 + n mod 10)
   in aux n 0
@@ -60,11 +65,32 @@ let rec zip xs ys = match (xs, ys) with
   | ([], y::ys) -> []
   | (x::xs, y::ys) -> (x,y)::zip xs ys
 
+let rec dropWhile p = function
+  | [] -> []
+  | x::xs as l -> if p x then dropWhile p xs else l
+
+let rec removeAll x = function
+  | [] -> []
+  | y::ys -> if y = x then removeAll x ys else y::removeAll x ys
+
+let rec removeFirst x = function
+  | [] -> []
+  | y::ys -> if y = x then ys else y::removeAll x ys
+
+let scan_left f z xs =
+  let rec aux acc = function
+    | [] -> acc
+    | x::xs -> aux (f (List.hd acc) x :: acc) xs
+  in aux [z] xs |> List.rev
+
+let sum xs = List.fold_left (+) 0 xs
+let product xs = List.fold_left ( * ) 1 xs
+
 let max_sublist_prod len xs =
   let rec aux max = function
     | [] -> max
     | x::xs as l ->
-      let product = take len l |> List.fold_left ( * ) 1 in
+      let product = take len l |> product in
       if product > max then aux product xs else aux max xs
   in aux 0 xs
 
@@ -77,7 +103,7 @@ let int_of_digits ds =
   List.fold_left (fun num i -> num * 10 + i) 0 ds
 
 let scalar_mul_digits s xs =
-  let rec aux carry = function 
+  let rec aux carry = function
     | [] -> if carry = 0 then [] else digits carry
     | x::xs ->
       let n = s * x + carry in
@@ -85,8 +111,6 @@ let scalar_mul_digits s xs =
       let carry = n / 10 in
       digit :: aux carry xs
   in aux 0 xs
-
-let sum xs = List.fold_left (+) 0 xs
 
 let divisor_sum n =
   foldl_range 1 (n/2) (fun sum i ->
@@ -133,6 +157,10 @@ let next_multiset ds =
       else aux (i + 1) carry ds
   in aux 0 1 ds
 
+let floor_sqrt x = x |> float_of_int |> sqrt |> int_of_float
+
+let is_square x = let a = floor_sqrt x in a*a = x
+
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
   List.(list_of_range 1 999 |> filter mul_3_5 |> fold_left (+) 0)
@@ -154,7 +182,7 @@ let p4 () =
   in pal_div_3d prefix
 
 let p5 () =
-  let common_div = list_of_range 1 20 |> List.filter is_prime |> List.fold_left ( * ) 1 in
+  let common_div = list_of_range 1 20 |> List.filter is_prime |> product in
   let is_div_1_20 n = foldl_range 1 20 (fun p i -> p && (n mod i == 0)) true in
   let rec aux i = if is_div_1_20 i then i else aux (i + common_div) in
   aux common_div
@@ -166,11 +194,6 @@ let p6 () =
   square_of_sum - sum_of_squares
 
 let p7 () =
-  let rec next_prime = function
-    | p when p < 2 -> 2
-    | 2 -> 3
-    | p -> let next = p + 2 in if is_prime next then next else next_prime next
-  in
   let nth_prime n =
     let rec aux p i = if i <= 1 then p else aux (next_prime p) (i - 1)
     in aux 2 n
@@ -224,7 +247,7 @@ let p9 () =
 
 let p10 () =
   (* brute force is fast enough, but a proper sieving algorithm would be nicer *)
-  let primes = 
+  let primes =
     foldl_range 2 2_000_000 (fun xs i ->
         if is_prime i then i::xs else xs
       ) []
@@ -263,7 +286,7 @@ let p15 () =
       end
   in
   path_count (20,20)
-    
+
 let p16 () =
   let rec pow2_digits n acc =
     if n <= 0 then acc else pow2_digits (n - 1) (scalar_mul_digits 2 acc)
@@ -306,7 +329,7 @@ let p23 () =
 exception Result of int list
 
 let p24 () =
-  let rec lex_perm_count cnt perm = 
+  let rec lex_perm_count cnt perm =
     if List.length perm < 10 then
       foldl_range 0 9 (fun cnt i ->
           if List.mem i perm
@@ -316,7 +339,7 @@ let p24 () =
     if cnt <= 1 then raise (Result perm) else (cnt - 1)
   in
   try lex_perm_count 1_000_000 []
-  with Result perm -> perm |> List.rev |> int_of_digits 
+  with Result perm -> perm |> List.rev |> int_of_digits
 
 let p25 () =
   let fib_digits len =
@@ -357,8 +380,8 @@ let p28 () =
   in diag_sum 1001
 
 let p29 () =
-  let run_length = function 
-    | x::xs -> 
+  let run_length = function
+    | x::xs ->
       (* ugh :( *)
       let rec aux n cur acc = function
         | [] -> (n, cur)::acc
@@ -390,7 +413,7 @@ let p30 () =
     (sort ds) = (sort pow5_digits)
   in
   let find_solutions max_length =
-    let rec aux acc ds = 
+    let rec aux acc ds =
       let acc = (if is_solution ds then ds::acc else acc) in
       let next = next_multiset ds in
       if List.length next > max_length then acc else aux acc next
@@ -402,8 +425,8 @@ let p31 () =
     let rec aux min acc value =
       if value > target then acc else
       if value = target then (acc + 1) else
-        coins |> 
-        List.filter ((<=) min) |> 
+        coins |>
+        List.filter ((<=) min) |>
         List.fold_left (fun acc coin -> aux coin acc (value + coin)) acc
     in aux 0 0 0
   in find_solutions 200 [1;2;5;10;20;50;100;200]
@@ -470,7 +493,7 @@ let p34 () =
   in find_solutions [] [3] 7 |> List.map fact_sum |> sum
 
 let p35 () =
-  let rotate = function 
+  let rotate = function
     | [] -> []
     | x::xs -> xs @ [x]
   in
@@ -497,8 +520,8 @@ let p36 () =
     ) 0
 
 let p37 () =
-  let are_prefixes_prime ds = 
-    let rec aux acc = function 
+  let are_prefixes_prime ds =
+    let rec aux acc = function
       | [] -> true
       | x::xs ->
         let ds = acc @ [x] in
@@ -554,7 +577,7 @@ let p39 () =
   let is_right_triangle a b c = (a*a + b*b - c*c = 0) in
   let count_right_triangles p =
     foldl_range 1 (p/3) (fun acc a ->
-        foldl_range (a+1) (2*p/3) (fun acc b -> 
+        foldl_range (a+1) (2*p/3) (fun acc b ->
             let c = p - a - b in
             if is_right_triangle a b c
             then acc + 1
@@ -565,6 +588,213 @@ let p39 () =
      |> List.map (fun i -> (i, count_right_triangles i))
      |> List.fold_left max_snd (0,0)
      |> fst
+
+let p40 () =
+  let nth n xs = List.nth xs n in
+  let digits n = n |> digits |> List.rev in
+  let nth_digit n =
+    let rec aux len exp =
+      let num_digits = exp + 1 in
+      let start = pow 10 exp and ende = pow 10 num_digits in
+      let nums = num_digits * (ende - start) in
+      if len + nums + 1 > n
+      then
+        let offset = n - len - 1 in
+        let number = pow 10 exp + offset / num_digits in
+        let digit = number |> digits |> nth (offset mod num_digits) in
+        digit
+      else aux (nums + len) (exp + 1)
+    in if n < 10 then n else aux 9 1
+  in [1; 10; 100; 1000; 10000; 100000; 1000000]
+     |> List.map nth_digit
+     |> product
+
+let p41 () =
+  let rec max_pd_prime_len length perm =
+    if List.length perm < length then
+      foldr_range 1 length (fun i acc ->
+          if List.mem i perm || acc <> None then acc
+          else max_pd_prime_len length (perm @ [i])
+        ) None
+    else
+      let n = int_of_digits perm in
+      if is_prime n then Some n else None
+  in
+  let rec max_pd_prime len =
+    match max_pd_prime_len len [] with
+    | None -> max_pd_prime (len - 1)
+    | Some x -> x
+  in
+  max_pd_prime 9
+
+let p43 () =
+  let small_primes = list_of_range 2 17 |> List.filter is_prime in
+  let rec has_property divs xs =
+    match (divs, xs) with
+    | (p::ps, a::(b::c::d::xs as tl)) ->
+      if int_of_digits [b;c;d] mod p = 0 then
+        has_property ps tl
+      else
+        false
+    | (_,_) -> true
+  in
+  let rec has_property_sum acc perm =
+    let len = List.length perm in
+    let start = if len < 9 then 0 else 1 in
+    if len < 10 then
+      foldl_range start 9 (fun acc i ->
+          if List.mem i perm then acc
+          else has_property_sum acc (i::perm)
+        ) acc
+    else
+    if has_property small_primes perm then
+      acc + int_of_digits perm
+    else
+      acc
+  in has_property_sum 0 []
+
+let p44 () =
+  let penta i = i * (3 * i - 1) / 2 in
+  let is_penta k =
+    let d = 1 + 24*k in
+    is_square d && (floor_sqrt d + 1) mod 6 = 0
+  in
+  let split_diff diff =
+    let rec aux i =
+      if penta i > diff then []
+      else
+        let num = 2*diff + i - 3*i*i in
+        let n = num / (6*i) in
+        if num > 0 && num mod (6*i) = 0
+        then (penta n, penta (n + i))::aux (i + 1)
+        else aux (i + 1)
+    in
+    aux 1
+  in
+  let filter_penta_sum xs = List.filter (fun (i,j) -> is_penta (i + j)) xs in
+  let rec solution i =
+    let penta = penta i in
+    let res = split_diff penta in
+    if filter_penta_sum res <> [] then penta else solution (i+1)
+  in
+  solution 1
+
+let p45 () =
+  let penta i = i * (3 * i - 1) / 2 in
+  let is_tria k =
+    let d = 1 + 8*k in
+    is_square d && (floor_sqrt d - 1) mod 2 = 0
+  in
+  let is_hexa k =
+    let d = 1 + 8*k in
+    is_square d && (floor_sqrt d + 1) mod 4 = 0
+  in
+  let rec solution i =
+    let penta = penta i in
+    if is_hexa penta && is_tria penta then penta else solution (i + 1)
+  in
+  solution 166
+
+let p46 () =
+  let does_gb_hold n =
+    let rec aux p =
+      if p >= n then false else
+        let sub = n - p in
+        if sub mod 2 = 0 && is_square (sub / 2) then true else
+          aux (next_prime p)
+    in aux 2
+  in
+  let rec solution i =
+    if not (does_gb_hold i) && not (is_prime i) then i else
+      solution (i + 2)
+  in solution 9
+
+let p47 () =
+  let rec solution i =
+    let is = [i; i+1; i+2; i+3;] in
+    let is_solution =
+      is |>
+      List.map (fun i -> i |> prime_factors |> remdups |> List.length) |>
+      List.for_all ((=) 4)
+    in if is_solution then i else solution (i + 1)
+  in solution 1
+
+let p48 () =
+  let pow_digits b e =
+    let rec aux acc e =
+      if e <= 0 then acc else
+        aux (scalar_mul_digits b acc) (e - 1)
+    in aux [1] e
+  in
+  foldl_range 1 1000 (fun acc i -> add_digits acc (pow_digits i i)) [] |>
+  take 10 |> int_of_digits
+
+let p49 () =
+  let digits n = n |> digits |> List.rev in
+  let rec sequences xs =
+    let rec sequence first step xs =
+      match dropWhile ((<>) (first + step)) xs with
+      | [] -> [first]
+      | x::xs -> first :: sequence x step xs
+    in
+    match xs with
+    | [] ->  []
+    | x::xs -> List.map (fun i -> sequence x (i - x) xs) xs @ sequences xs
+  in
+  let rec perm_primes acc perm ds =
+    if ds = [] then
+      let n = int_of_digits perm in
+      if n > 1000 && is_prime n then n::acc else acc
+    else
+      List.fold_left (fun acc d ->
+          perm_primes acc (d::perm) (removeFirst d ds)
+        ) acc ds
+  in
+  let rec find_solutions acc start =
+    if List.length start > 4 then acc else
+      let solutions =
+        start |>
+        perm_primes [] [] |>
+        remdups |>
+        List.sort compare |>
+        sequences |>
+        List.filter (fun s -> List.length s >= 3)
+      in find_solutions (solutions @ acc) (next_multiset start)
+  in find_solutions [] [1;0;0;0] |>
+     List.hd |>
+     List.map digits |>
+     List.concat |>
+     int_of_digits
+
+let p50 () =
+  let limit = 1_000_000 in
+  let rec primes n =
+    let ptbl = Hashtbl.create (n / (n |> float_of_int |> log |> int_of_float)) in
+    let rec aux acc p =
+      if p >= n then acc else begin
+        Hashtbl.add ptbl p ();
+        aux (p::acc) (next_prime p)
+      end
+    in (aux [] 2 |> List.rev, ptbl)
+  in
+  let (some_primes, ptbl) = primes limit in
+  let is_prime n =
+    try Hashtbl.find ptbl n; true
+    with Not_found -> false
+  in
+  let max_prime_idx sub =
+    List.fold_left (fun (i, max_idx, max) p ->
+        let p = p - sub in
+        if p < limit && is_prime p then (i + 1, i, p)  else (i + 1, max_idx , max)
+      ) (0,0,0)
+  in
+  let rec longest_seq ((max_len, _) as acc) = function
+    | [] -> acc
+    | x::xs ->
+      let (_, len, last) = max_prime_idx x xs in
+      if len > max_len then longest_seq (len, last) xs else longest_seq acc xs
+  in
+  scan_left (+) 0 some_primes |> longest_seq (0,0) |> snd
 
 let all () =
   let open Printf in
@@ -598,9 +828,19 @@ let all () =
   p35 () |> printf "35 %d\n";
   p36 () |> printf "36 %d\n";
   p37 () |> printf "37 %d\n";
-  p38 () |> printf "38 %d\n";;
+  p38 () |> printf "38 %d\n";
+  p39 () |> printf "39 %d\n";
+  p40 () |> printf "40 %d\n";
+  p41 () |> printf "41 %d\n";
+  p43 () |> printf "42 %d\n";
+  p44 () |> printf "43 %d\n";
+  p45 () |> printf "44 %d\n";
+  p46 () |> printf "45 %d\n";
+  p47 () |> printf "47 %d\n";
+  p48 () |> printf "48 %d\n";
+  p49 () |> printf "49 %d\n";;
 
 let last =
   let open Printf in
-  p39 () |> printf "39 %d\n";;
+  p50 () |> printf "50 %d\n";;
 
