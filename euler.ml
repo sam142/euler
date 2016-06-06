@@ -161,6 +161,17 @@ let floor_sqrt x = x |> float_of_int |> sqrt |> int_of_float
 
 let is_square x = let a = floor_sqrt x in a*a = x
 
+let str_fold_left f z str =
+  let len = String.length str in
+  let rec aux z i =
+    if i < len
+    then aux (f z str.[i]) (i + 1) else z
+  in aux z 0
+
+let is_tria k =
+  let d = 1 + 8*k in
+  is_square d && (floor_sqrt d - 1) mod 2 = 0
+
 let p1 () =
   let mul_3_5 n = n mod 3 = 0 || n mod 5 = 0 in
   List.(list_of_range 1 999 |> filter mul_3_5 |> fold_left (+) 0)
@@ -627,6 +638,15 @@ let p41 () =
   in
   max_pd_prime 9
 
+let p42 () =
+  let ic = open_in "p042_words.txt" in
+  let line = input_line ic in
+  let words = Str.(split (regexp "[\" ,]+") line) in
+  let val_of_str =
+    str_fold_left (fun sum c -> int_of_char c - int_of_char 'A' + 1 + sum) 0
+  in
+  List.map val_of_str words |> List.filter is_tria |> List.length
+
 let p43 () =
   let small_primes = list_of_range 2 17 |> List.filter is_prime in
   let rec has_property divs xs =
@@ -681,10 +701,6 @@ let p44 () =
 
 let p45 () =
   let penta i = i * (3 * i - 1) / 2 in
-  let is_tria k =
-    let d = 1 + 8*k in
-    is_square d && (floor_sqrt d - 1) mod 2 = 0
-  in
   let is_hexa k =
     let d = 1 + 8*k in
     is_square d && (floor_sqrt d + 1) mod 4 = 0
@@ -838,9 +854,10 @@ let all () =
   p46 () |> printf "45 %d\n";
   p47 () |> printf "47 %d\n";
   p48 () |> printf "48 %d\n";
-  p49 () |> printf "49 %d\n";;
+  p49 () |> printf "49 %d\n";
+  p50 () |> printf "50 %d\n";;
 
 let last =
   let open Printf in
-  p50 () |> printf "50 %d\n";;
+  p42 () |> printf "42 %d\n";;
 
